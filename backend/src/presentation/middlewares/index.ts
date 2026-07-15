@@ -36,15 +36,16 @@ export function validate(schema: ZodSchema, source: 'body' | 'query' | 'params' 
     }
 
     if (source === 'body') {
-      // O req.body permite reatribuição direta na maioria dos parsers
       req.body = result.data;
+    } else if (source === 'query') {
+      Object.defineProperty(req, 'query', {
+        value: result.data,
+        writable: true,
+        configurable: true,
+        enumerable: true,
+      });
     } else {
-      // Para query e params, precisamos mutar o objeto existente em vez de substituí-lo.
-      // 1. Limpamos as chaves antigas (garante que chaves não validadas pelo Zod sejam removidas)
-      Object.keys(req[source]).forEach((key) => delete req[source][key]);
-      
-      // 2. Injetamos os dados validados (e possivelmente transformados pelo Zod)
-      Object.assign(req[source], result.data);
+      req.params = result.data as any; 
     }
 
     next();
